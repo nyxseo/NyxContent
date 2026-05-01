@@ -1,0 +1,22 @@
+FROM docker.n8n.io/n8nio/n8n:latest
+
+# Port default n8n
+EXPOSE 5678
+
+# Buat direktori data n8n (akan di-mount sebagai volume di Railway)
+USER root
+RUN mkdir -p /home/node/.n8n && chown -R node:node /home/node/.n8n
+USER node
+
+# Env defaults (bisa di-override dari Railway dashboard)
+ENV N8N_HOST=0.0.0.0 \
+    N8N_PORT=5678 \
+    N8N_PROTOCOL=https \
+    N8N_USER_FOLDER=/home/node/.n8n \
+    DB_TYPE=sqlite \
+    EXECUTIONS_DATA_SAVE_ON_SUCCESS=all \
+    EXECUTIONS_DATA_SAVE_ON_ERROR=all \
+    GENERIC_TIMEZONE=Asia/Jakarta \
+    N8N_DEFAULT_BINARY_DATA_MODE=filesystem
+
+CMD ["n8n", "start"]

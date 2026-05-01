@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Next.js build output
+.next/
+out/
+**/.next/
+
+# Env files (jangan commit kunci/kredensial)
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+
+# Logs
+*.log
+dev-server.log
+npm-debug.log*
+
+# n8n local data
+.n8n/
+**/.n8n/
+
+# Working files (artefak script lokal — sering berisi API keys aktif)
+workflow_live.json
+workflow_current.json
+workflow_put.json
+workflow_clean.json
+workflow_ready.json
+workflow_import.json
+workflow_patched.json
+wf_resp*.json
+test_resp.txt
+tsconfig.tsbuildinfo
+**/tsconfig.tsbuildinfo
+*.py.bak
+
+# Editor
+.vscode/
+.idea/
+.claude/
+*.swp
+.DS_Store
+Thumbs.db

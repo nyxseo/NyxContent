@@ -1,0 +1,1147 @@
+{
+  "name": "SEO Content Engine - Claude API",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "seo-content-engine",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "sce-0001-0000-0000-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 500],
+      "webhookId": "seo-content-engine-wh"
+    },
+    {
+      "parameters": {
+        "operation": "getRows",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_ID_HERE",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Clients",
+          "mode": "name"
+        },
+        "options": {
+          "returnAll": true
+        }
+      },
+      "id": "sce-0002-0000-0000-000000000002",
+      "name": "GSheets Get All Clients",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [460, 500],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GSHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const clientName = $('Webhook').item.json.client_name;\nconst rows = items;\n\nconst match = rows.find(item => item.json.client_name === clientName);\nif (!match) {\n  throw new Error(`Client '${clientName}' not found in Google Sheets`);\n}\n\nreturn [{\n  json: {\n    client_name: match.json.client_name,\n    website_url: match.json.website_url,\n    sitemap_url: match.json.sitemap_url,\n    drive_folder_id: match.json.drive_folder_id || '',\n    articles_folder_id: match.json.articles_folder_id || '',\n    keyword: $('Webhook').item.json.keyword,\n    word_count: parseInt($('Webhook').item.json.word_count) || 1500,\n    tone: $('Webhook').item.json.tone || 'profesional'\n  }\n}];"
+      },
+      "id": "sce-0003-0000-0000-000000000003",
+      "name": "Code Find Client",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 500]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "folder-check-001",
+              "leftValue": "={{ $json.drive_folder_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "sce-0004-0000-0000-000000000004",
+      "name": "IF No Folder",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 500]
+    },
+    {
+      "parameters": {
+        "operation": "createFolder",
+        "name": "={{ $('Code Find Client').item.json.client_name }} - SEO Content Engine",
+        "options": {}
+      },
+      "id": "sce-0005-0000-0000-000000000005",
+      "name": "Drive Create Root Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1120, 300],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_GDRIVE_CREDENTIAL_ID",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "createFolder",
+        "name": "01_Articles",
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "sce-0006-0000-0000-000000000006",
+      "name": "Drive Create 01 Articles",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1340, 300],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_GDRIVE_CREDENTIAL_ID",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "createFolder",
+        "name": "02_Metadata",
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $('Drive Create Root Folder').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "sce-0007-0000-0000-000000000007",
+      "name": "Drive Create 02 Metadata",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1560, 300],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_GDRIVE_CREDENTIAL_ID",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "createFolder",
+        "name": "03_Research",
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $('Drive Create Root Folder').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "sce-0008-0000-0000-000000000008",
+      "name": "Drive Create 03 Research",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1780, 300],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_GDRIVE_CREDENTIAL_ID",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_ID_HERE",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Clients",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "client_name": "={{ $('Code Find Client').item.json.client_name }}",
+            "drive_folder_id": "={{ $('Drive Create Root Folder').item.json.id }}",
+            "articles_folder_id": "={{ $('Drive Create 01 Articles').item.json.id }}"
+          },
+          "matchingColumns": ["client_name"],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "sce-0009-0000-0000-000000000009",
+      "name": "GSheets Update Folder ID",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [2000, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GSHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize output after folder creation\nreturn [{\n  json: {\n    client_name: $('Code Find Client').item.json.client_name,\n    website_url: $('Code Find Client').item.json.website_url,\n    keyword: $('Code Find Client').item.json.keyword,\n    word_count: $('Code Find Client').item.json.word_count,\n    tone: $('Code Find Client').item.json.tone,\n    drive_folder_id: $('Drive Create Root Folder').item.json.id,\n    articles_folder_id: $('Drive Create 01 Articles').item.json.id\n  }\n}];"
+      },
+      "id": "sce-0010-0000-0000-000000000010",
+      "name": "Code New Folder Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2220, 300]
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "output": "input1"
+      },
+      "id": "sce-0011-0000-0000-000000000011",
+      "name": "Merge Folder Branches",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [2440, 500]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://serpapi.com/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "engine", "value": "google" },
+            { "name": "q", "value": "={{ $json.keyword }}" },
+            { "name": "gl", "value": "id" },
+            { "name": "hl", "value": "id" },
+            { "name": "num", "value": "10" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "sce-0012-0000-0000-000000000012",
+      "name": "SerpAPI Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2660, 500],
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "YOUR_SERPAPI_CREDENTIAL_ID",
+          "name": "SerpAPI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = $json.organic_results || [];\nconst clientData = $('Merge Folder Branches').item.json;\n\n// Filter: no youtube, no ads, organic only\nconst filtered = results\n  .filter(r => r.link && !r.link.includes('youtube.com') && !r.link.includes('youtu.be'))\n  .slice(0, 3)\n  .map((r, i) => ({\n    ref_index: i + 1,\n    title: r.title || '',\n    url: r.link || '',\n    snippet: r.snippet || '',\n    client_name: clientData.client_name,\n    website_url: clientData.website_url,\n    keyword: clientData.keyword,\n    word_count: clientData.word_count,\n    tone: clientData.tone,\n    drive_folder_id: clientData.drive_folder_id,\n    articles_folder_id: clientData.articles_folder_id\n  }));\n\nif (filtered.length === 0) {\n  throw new Error('SerpAPI returned no organic results for keyword: ' + clientData.keyword);\n}\n\nreturn filtered.map(f => ({ json: f }));"
+      },
+      "id": "sce-0013-0000-0000-000000000013",
+      "name": "Code Extract 3 URLs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2880, 500]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "sce-0014-0000-0000-000000000014",
+      "name": "Loop Refs",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [3100, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v1/scrape",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"url\": \"{{ $json.url }}\",\n  \"formats\": [\"markdown\"],\n  \"onlyMainContent\": true\n}",
+        "options": {}
+      },
+      "id": "sce-0015-0000-0000-000000000015",
+      "name": "Firecrawl Scrape",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3320, 500],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_FIRECRAWL_CREDENTIAL_ID",
+          "name": "Firecrawl"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract scraped data and attach metadata from the loop item\nconst scrape = $json;\nconst refIndex = $('Loop Refs').item.json.ref_index;\nconst title = $('Loop Refs').item.json.title;\nconst url = $('Loop Refs').item.json.url;\n\nreturn [{\n  json: {\n    ref_index: refIndex,\n    ref_title: title,\n    ref_url: url,\n    ref_markdown: scrape.data?.markdown || scrape.markdown || '',\n    // Pass-through client data\n    client_name: $('Loop Refs').item.json.client_name,\n    website_url: $('Loop Refs').item.json.website_url,\n    keyword: $('Loop Refs').item.json.keyword,\n    word_count: $('Loop Refs').item.json.word_count,\n    tone: $('Loop Refs').item.json.tone,\n    drive_folder_id: $('Loop Refs').item.json.drive_folder_id,\n    articles_folder_id: $('Loop Refs').item.json.articles_folder_id\n  }\n}];"
+      },
+      "id": "sce-0016-0000-0000-000000000016",
+      "name": "Code Format Scrape",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3540, 500]
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "id": "sce-0017-0000-0000-000000000017",
+      "name": "Aggregate References",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [3760, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Restructure aggregated references into a single object\nconst allRefs = $json.data || [];\n\nconst refs = {};\nallRefs.forEach(ref => {\n  const i = ref.ref_index;\n  refs[`ref_${i}_title`] = ref.ref_title || '';\n  refs[`ref_${i}_url`] = ref.ref_url || '';\n  refs[`ref_${i}_markdown`] = (ref.ref_markdown || '').slice(0, 8000); // cap at 8k chars\n});\n\nconst first = allRefs[0] || {};\n\nreturn [{\n  json: {\n    ...refs,\n    client_name: first.client_name,\n    website_url: first.website_url,\n    keyword: first.keyword,\n    word_count: first.word_count,\n    tone: first.tone,\n    drive_folder_id: first.drive_folder_id,\n    articles_folder_id: first.articles_folder_id\n  }\n}];"
+      },
+      "id": "sce-0018-0000-0000-000000000018",
+      "name": "Code Combine References",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3980, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v1/crawl",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"url\": \"{{ $json.website_url }}\",\n  \"maxPages\": 150,\n  \"scrapeOptions\": {\n    \"formats\": [\"markdown\"]\n  }\n}",
+        "options": {}
+      },
+      "id": "sce-0019-0000-0000-000000000019",
+      "name": "Firecrawl Start Crawl",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [4200, 500],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_FIRECRAWL_CREDENTIAL_ID",
+          "name": "Firecrawl"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Store crawl ID for polling and pass through all data\nconst crawlResponse = $json;\nconst prevData = $('Code Combine References').item.json;\n\nreturn [{\n  json: {\n    ...prevData,\n    crawl_id: crawlResponse.id || crawlResponse.jobId || '',\n    crawl_status: crawlResponse.status || 'started'\n  }\n}];"
+      },
+      "id": "sce-0020-0000-0000-000000000020",
+      "name": "Code Store Crawl ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4420, 500]
+    },
+    {
+      "parameters": {
+        "unit": "seconds",
+        "amount": 90
+      },
+      "id": "sce-0021-0000-0000-000000000021",
+      "name": "Wait 90s for Crawl",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [4640, 500],
+      "webhookId": "sce-wait-crawl"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.firecrawl.dev/v1/crawl/{{ $json.crawl_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "sce-0022-0000-0000-000000000022",
+      "name": "Get Crawl Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [4860, 500],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_FIRECRAWL_CREDENTIAL_ID",
+          "name": "Firecrawl"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const crawlResult = $json;\nconst prevData = $('Code Store Crawl ID').item.json;\nconst keyword = prevData.keyword.toLowerCase();\n\n// Get pages from crawl result\nconst pages = crawlResult.data || [];\n\n// TOFU patterns (blog/educational)\nconst tofuPatterns = ['/blog/', '/artikel/', '/panduan/', '/tips/', '/cara/', '/apa-itu/', '/pengertian/', '/tutorial/'];\n// BOFU patterns (money/conversion)\nconst bofuPatterns = ['/produk/', '/layanan/', '/jasa/', '/harga/', '/paket/', '/beli/', '/order/', '/hubungi/'];\n\nconst scorePage = (page) => {\n  let score = 0;\n  const url = (page.url || page.metadata?.url || '').toLowerCase();\n  const title = (page.metadata?.title || '').toLowerCase();\n  const description = (page.metadata?.description || '').toLowerCase();\n  const content = (page.markdown || '').toLowerCase();\n\n  if (title.includes(keyword)) score += 5;\n  if (url.includes(keyword.replace(/\\s+/g, '-'))) score += 3;\n  if (description.includes(keyword)) score += 2;\n  if (content.includes(keyword)) score += 1;\n  return score;\n};\n\nconst classifyPage = (page) => {\n  const url = (page.url || page.metadata?.url || '').toLowerCase();\n  for (const p of tofuPatterns) if (url.includes(p)) return 'TOFU';\n  for (const p of bofuPatterns) if (url.includes(p)) return 'BOFU';\n  return 'OTHER';\n};\n\nconst generateAnchors = (title, keyword) => {\n  const kw = keyword || '';\n  const words = kw.split(' ');\n  const lsi = words.length > 1 ? words[0] + ' terbaik' : kw + ' terpercaya';\n  return [\n    kw,\n    lsi,\n    'Pelajari lebih lanjut'\n  ];\n};\n\nconst scored = pages.map(page => ({\n  url: page.url || page.metadata?.url || '',\n  title: page.metadata?.title || '',\n  type: classifyPage(page),\n  score: scorePage(page),\n  anchors: generateAnchors(page.metadata?.title || '', prevData.keyword)\n}));\n\nconst tofu = scored\n  .filter(p => p.type === 'TOFU' && p.url)\n  .sort((a, b) => b.score - a.score)\n  .slice(0, 5);\n\nconst bofu = scored\n  .filter(p => p.type === 'BOFU' && p.url)\n  .sort((a, b) => b.score - a.score)\n  .slice(0, 5);\n\nconst formatLinks = (links) => links.map((l, i) =>\n  `${i+1}. ${l.title}\\n   URL: ${l.url}\\n   Anchor suggestions: ${l.anchors.join(' | ')}`\n).join('\\n\\n');\n\nreturn [{\n  json: {\n    ...prevData,\n    blog_links_text: formatLinks(tofu),\n    money_links_text: formatLinks(bofu),\n    internal_links_count: tofu.length + bofu.length,\n    tofu_links: tofu,\n    bofu_links: bofu\n  }\n}];"
+      },
+      "id": "sce-0023-0000-0000-000000000023",
+      "name": "Code Classify Pages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [5080, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{ $credentials.anthropicApi.apiKey }}" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-3-haiku-20240307\",\n  \"max_tokens\": 1000,\n  \"temperature\": 0.3,\n  \"system\": \"Kamu adalah SEO expert Indonesia berpengalaman. Tugasmu adalah membuat metadata SEO yang optimal. Jawab HANYA dalam format JSON valid tanpa teks tambahan apapun, tanpa markdown code fences.\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Buat metadata SEO lengkap untuk artikel dengan keyword target: '{{ $json.keyword }}'\\n\\nWebsite klien: {{ $json.website_url }}\\n\\nBuat output dalam format JSON berikut (isi semua field, TANPA markdown code fences):\\n{\\n  \\\"slug\\\": \\\"url-artikel-tanpa-spasi-gunakan-strip\\\",\\n  \\\"meta_title\\\": \\\"Judul SEO 50-60 karakter mengandung keyword\\\",\\n  \\\"meta_description\\\": \\\"Deskripsi 150-160 karakter menarik mengandung keyword dan CTA\\\",\\n  \\\"alt_texts\\\": [\\n    \\\"Alt text gambar 1 (60-80 karakter)\\\",\\n    \\\"Alt text gambar 2 (60-80 karakter)\\\",\\n    \\\"Alt text gambar 3 (60-80 karakter)\\\",\\n    \\\"Alt text gambar 4 (60-80 karakter)\\\",\\n    \\\"Alt text gambar 5 (60-80 karakter)\\\"\\n  ],\\n  \\\"excerpt\\\": \\\"Ringkasan artikel 2-3 kalimat menarik untuk preview\\\"\\n}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "sce-0024-0000-0000-000000000024",
+      "name": "Claude Generate Metadata",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [5300, 500],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_ANTHROPIC_CREDENTIAL_ID",
+          "name": "Anthropic Claude API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $json;\nconst prevData = $('Code Classify Pages').item.json;\n\nlet rawText = '';\ntry {\n  rawText = response.content[0].text || '';\n} catch(e) {\n  throw new Error('Claude metadata response malformed: ' + JSON.stringify(response));\n}\n\n// Strip markdown code fences if present\nrawText = rawText.replace(/^```json\\s*/i, '').replace(/^```\\s*/i, '').replace(/\\s*```$/i, '').trim();\n\nlet metadata;\ntry {\n  metadata = JSON.parse(rawText);\n} catch(e) {\n  return [{ json: { ...prevData, metadata_valid: false, metadata_raw: rawText, metadata: null } }];\n}\n\nconst isValid = metadata.slug && metadata.meta_title && metadata.meta_description && \n  Array.isArray(metadata.alt_texts) && metadata.alt_texts.length >= 1 && metadata.excerpt;\n\nreturn [{\n  json: {\n    ...prevData,\n    metadata_valid: !!isValid,\n    metadata: isValid ? metadata : null,\n    metadata_raw: rawText\n  }\n}];"
+      },
+      "id": "sce-0025-0000-0000-000000000025",
+      "name": "Code Parse Metadata",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [5520, 500]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "metadata-valid-check",
+              "leftValue": "={{ $json.metadata_valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "sce-0026-0000-0000-000000000026",
+      "name": "IF Metadata Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [5740, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{ $credentials.anthropicApi.apiKey }}" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-3-haiku-20240307\",\n  \"max_tokens\": 1000,\n  \"temperature\": 0.2,\n  \"system\": \"Kamu adalah SEO expert Indonesia berpengalaman. Jawab HANYA dalam format JSON valid tanpa teks tambahan, tanpa markdown code fences.\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Buat metadata SEO untuk keyword: '{{ $json.keyword }}'\\nWebsite: {{ $json.website_url }}\\nOutput JSON (tanpa code fences):\\n{\\\"slug\\\":\\\"...\\\",\\\"meta_title\\\":\\\"...\\\",\\\"meta_description\\\":\\\"...\\\",\\\"alt_texts\\\":[\\\"...\\\",\\\"...\\\",\\\"...\\\",\\\"...\\\",\\\"...\\\"],\\\"excerpt\\\":\\\"...\\\"}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "sce-0027-0000-0000-000000000027",
+      "name": "Claude Metadata Retry",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [5960, 700],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_ANTHROPIC_CREDENTIAL_ID",
+          "name": "Anthropic Claude API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $json;\nconst prevData = $('Code Parse Metadata').item.json;\n\nlet rawText = '';\ntry {\n  rawText = response.content[0].text || '';\n} catch(e) {\n  rawText = '{}';\n}\n\nrawText = rawText.replace(/^```json\\s*/i, '').replace(/^```\\s*/i, '').replace(/\\s*```$/i, '').trim();\n\nlet metadata;\ntry {\n  metadata = JSON.parse(rawText);\n} catch(e) {\n  metadata = { slug: 'artikel-' + prevData.keyword.replace(/\\s+/g, '-').toLowerCase(), meta_title: prevData.keyword, meta_description: 'Artikel tentang ' + prevData.keyword, alt_texts: [prevData.keyword], excerpt: 'Artikel tentang ' + prevData.keyword };\n}\n\nreturn [{\n  json: {\n    ...prevData,\n    metadata_valid: true,\n    metadata: metadata\n  }\n}];"
+      },
+      "id": "sce-0028-0000-0000-000000000028",
+      "name": "Code Parse Metadata Retry",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [6180, 700]
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "output": "input1"
+      },
+      "id": "sce-0029-0000-0000-000000000029",
+      "name": "Merge Metadata",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [6400, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{ $credentials.anthropicApi.apiKey }}" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-3-haiku-20240307\",\n  \"max_tokens\": 8000,\n  \"temperature\": 0.7,\n  \"system\": \"Kamu adalah penulis konten SEO profesional Indonesia. Tugas kamu adalah membuat artikel blog berkualitas tinggi yang ramah SEO, informatif, dan engaging. Ikuti PERSIS format output yang diminta.\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Buat artikel SEO lengkap dengan spesifikasi berikut:\\n\\n=== DATA ARTIKEL ===\\nKeyword Target: {{ $json.keyword }}\\nJumlah Kata Target: {{ $json.word_count }} kata\\nTone: {{ $json.tone }}\\nWebsite Klien: {{ $json.website_url }}\\n\\n=== METADATA SEO ===\\nSlug: {{ $json.metadata.slug }}\\nMeta Title: {{ $json.metadata.meta_title }}\\nMeta Description: {{ $json.metadata.meta_description }}\\nExcerpt: {{ $json.metadata.excerpt }}\\nAlt Text Utama: {{ $json.metadata.alt_texts[0] }}\\n\\n=== REFERENSI 1 ===\\nJudul: {{ $json.ref_1_title }}\\nURL: {{ $json.ref_1_url }}\\nKonten:\\n{{ $json.ref_1_markdown }}\\n\\n=== REFERENSI 2 ===\\nJudul: {{ $json.ref_2_title }}\\nURL: {{ $json.ref_2_url }}\\nKonten:\\n{{ $json.ref_2_markdown }}\\n\\n=== REFERENSI 3 ===\\nJudul: {{ $json.ref_3_title }}\\nURL: {{ $json.ref_3_url }}\\nKonten:\\n{{ $json.ref_3_markdown }}\\n\\n=== INTERNAL LINKS - TOFU (Blog/Edukasi) ===\\nSisipkan di bagian edukasi/penjelasan artikel:\\n{{ $json.blog_links_text }}\\n\\n=== INTERNAL LINKS - BOFU (Produk/Layanan) ===\\nSisipkan di bagian CTA/rekomendasi:\\n{{ $json.money_links_text }}\\n\\n=== FORMAT OUTPUT WAJIB ===\\nGunakan PERSIS format berikut:\\n\\n[PUBLISHER BOX]\\n+--------------------------------------------------+\\n| KEYWORD TARGET: {{ $json.keyword }}\\n| URL SLUG: {{ $json.metadata.slug }}\\n| META TITLE: {{ $json.metadata.meta_title }}\\n| META DESCRIPTION: {{ $json.metadata.meta_description }}\\n| ALT TEXT: {{ $json.metadata.alt_texts[0] }}\\n| EXCERPT: {{ $json.metadata.excerpt }}\\n| REFERENSI:\\n|   1. {{ $json.ref_1_title }} - {{ $json.ref_1_url }}\\n|   2. {{ $json.ref_2_title }} - {{ $json.ref_2_url }}\\n|   3. {{ $json.ref_3_title }} - {{ $json.ref_3_url }}\\n| WEBSITE: {{ $json.website_url }}\\n+--------------------------------------------------+\\n\\n[JUDUL ARTIKEL]\\n{{ $json.metadata.meta_title }}\\n\\n[ISI ARTIKEL]\\n(Tulis artikel lengkap {{ $json.word_count }} kata. Gunakan H2 dan H3 untuk struktur. Sisipkan TOFU internal links di bagian edukasi dengan anchor text yang natural. Sisipkan BOFU internal links di bagian akhir/CTA. Gunakan keyword secara natural di seluruh artikel.)\\n\\n[SITASI/REFERENSI]\\n1. {{ $json.ref_1_title }} - {{ $json.ref_1_url }} (Diakses: {{ $now.format('DD MMMM YYYY') }})\\n2. {{ $json.ref_2_title }} - {{ $json.ref_2_url }} (Diakses: {{ $now.format('DD MMMM YYYY') }})\\n3. {{ $json.ref_3_title }} - {{ $json.ref_3_url }} (Diakses: {{ $now.format('DD MMMM YYYY') }})\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "sce-0030-0000-0000-000000000030",
+      "name": "Claude Generate Article",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [6620, 500],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_ANTHROPIC_CREDENTIAL_ID",
+          "name": "Anthropic Claude API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $json;\nconst prevData = $('Merge Metadata').item.json;\n\nlet articleText = '';\ntry {\n  articleText = response.content[0].text || '';\n} catch(e) {\n  throw new Error('Claude article response malformed');\n}\n\n// Validate required sections\nconst hasPublisherBox = articleText.includes('[PUBLISHER BOX]');\nconst hasTitle = articleText.includes('[JUDUL ARTIKEL]');\nconst hasContent = articleText.includes('[ISI ARTIKEL]');\nconst hasCitations = articleText.includes('[SITASI/REFERENSI]');\n\n// Count words\nconst wordCount = articleText.split(/\\s+/).filter(w => w.length > 0).length;\nconst targetWords = prevData.word_count;\nconst wordCountOk = wordCount >= targetWords * 0.75;\n\nconst isValid = hasPublisherBox && hasTitle && hasContent && hasCitations && wordCountOk;\n\nreturn [{\n  json: {\n    ...prevData,\n    article_text: articleText,\n    article_valid: isValid,\n    article_word_count: wordCount,\n    validation_details: {\n      hasPublisherBox,\n      hasTitle,\n      hasContent,\n      hasCitations,\n      wordCountOk,\n      wordCount\n    }\n  }\n}];"
+      },
+      "id": "sce-0031-0000-0000-000000000031",
+      "name": "Code Validate Article",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [6840, 500]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "article-valid-check",
+              "leftValue": "={{ $json.article_valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "sce-0032-0000-0000-000000000032",
+      "name": "IF Article Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [7060, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{ $credentials.anthropicApi.apiKey }}" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-3-haiku-20240307\",\n  \"max_tokens\": 8000,\n  \"temperature\": 0.5,\n  \"system\": \"Kamu adalah penulis konten SEO profesional Indonesia. Ikuti PERSIS format output yang diminta. Ini adalah retry - pastikan semua section [PUBLISHER BOX], [JUDUL ARTIKEL], [ISI ARTIKEL], [SITASI/REFERENSI] ada.\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Buat artikel SEO {{ $json.word_count }} kata untuk keyword '{{ $json.keyword }}'.\\n\\nWebsite: {{ $json.website_url }}\\nMetadata: slug={{ $json.metadata.slug }}, title={{ $json.metadata.meta_title }}\\n\\nReferensi:\\n1. {{ $json.ref_1_title }} - {{ $json.ref_1_url }}\\n2. {{ $json.ref_2_title }} - {{ $json.ref_2_url }}\\n3. {{ $json.ref_3_title }} - {{ $json.ref_3_url }}\\n\\nInternal links blog:\\n{{ $json.blog_links_text }}\\n\\nInternal links produk:\\n{{ $json.money_links_text }}\\n\\nGUNAKAN FORMAT INI PERSIS:\\n[PUBLISHER BOX]\\n+--------------------------------------------------+\\n| KEYWORD TARGET: {{ $json.keyword }}\\n| URL SLUG: {{ $json.metadata.slug }}\\n| META TITLE: {{ $json.metadata.meta_title }}\\n| META DESCRIPTION: {{ $json.metadata.meta_description }}\\n| ALT TEXT: {{ $json.metadata.alt_texts[0] }}\\n| EXCERPT: {{ $json.metadata.excerpt }}\\n| REFERENSI:\\n|   1. {{ $json.ref_1_title }} - {{ $json.ref_1_url }}\\n|   2. {{ $json.ref_2_title }} - {{ $json.ref_2_url }}\\n|   3. {{ $json.ref_3_title }} - {{ $json.ref_3_url }}\\n| WEBSITE: {{ $json.website_url }}\\n+--------------------------------------------------+\\n[JUDUL ARTIKEL]\\n{{ $json.metadata.meta_title }}\\n[ISI ARTIKEL]\\n(artikel lengkap {{ $json.word_count }} kata)\\n[SITASI/REFERENSI]\\n1. {{ $json.ref_1_title }} - {{ $json.ref_1_url }}\\n2. {{ $json.ref_2_title }} - {{ $json.ref_2_url }}\\n3. {{ $json.ref_3_title }} - {{ $json.ref_3_url }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "sce-0033-0000-0000-000000000033",
+      "name": "Claude Article Retry",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [7280, 700],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_ANTHROPIC_CREDENTIAL_ID",
+          "name": "Anthropic Claude API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $json;\nconst prevData = $('Code Validate Article').item.json;\n\nlet articleText = '';\ntry {\n  articleText = response.content[0].text || '';\n} catch(e) {\n  articleText = prevData.article_text || '';\n}\n\nreturn [{\n  json: {\n    ...prevData,\n    article_text: articleText,\n    article_valid: true\n  }\n}];"
+      },
+      "id": "sce-0034-0000-0000-000000000034",
+      "name": "Code Validate Retry",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [7500, 700]
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "output": "input1"
+      },
+      "id": "sce-0035-0000-0000-000000000035",
+      "name": "Merge Article",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [7720, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $json;\nconst today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD\nconst keyword = data.keyword || '';\nconst articleText = data.article_text || '';\nconst metadata = data.metadata || {};\n\n// Parse sections from article\nconst extractSection = (text, startTag, endTag) => {\n  const start = text.indexOf(startTag);\n  if (start === -1) return '';\n  const contentStart = start + startTag.length;\n  const end = endTag ? text.indexOf(endTag, contentStart) : text.length;\n  return text.slice(contentStart, end === -1 ? text.length : end).trim();\n};\n\nconst publisherBox = extractSection(articleText, '[PUBLISHER BOX]', '[JUDUL ARTIKEL]');\nconst judul = extractSection(articleText, '[JUDUL ARTIKEL]', '[ISI ARTIKEL]').trim();\nconst isi = extractSection(articleText, '[ISI ARTIKEL]', '[SITASI/REFERENSI]');\nconst sitasi = extractSection(articleText, '[SITASI/REFERENSI]', null);\n\n// Build HTML content for Google Docs\nconst publisherBoxHtml = `<table style=\"width:100%;background-color:#f5f5f5;border:1px solid #ddd;padding:10px;font-family:monospace;font-size:12px;\"><tr><td><pre>${publisherBox.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre></td></tr></table>`;\n\nconst isiHtml = isi\n  .replace(/^## (.+)$/gm, '<h2>$1</h2>')\n  .replace(/^### (.+)$/gm, '<h3>$1</h3>')\n  .replace(/\\*\\*(.+?)\\*\\*/g, '<strong>$1</strong>')\n  .replace(/\\*(.+?)\\*/g, '<em>$1</em>')\n  .replace(/\\[(.+?)\\]\\((.+?)\\)/g, '<a href=\"$2\">$1</a>')\n  .replace(/^- (.+)$/gm, '<li>$1</li>')\n  .replace(/(<li>.*<\\/li>\\n?)+/g, '<ul>$&</ul>')\n  .replace(/\\n\\n/g, '</p><p>')\n  .replace(/^(?!<[hul])/gm, '');\n\nconst sitasiHtml = sitasi\n  .split('\\n')\n  .filter(l => l.trim())\n  .map(l => `<p>${l.trim()}</p>`)\n  .join('');\n\nconst fullHtml = `${publisherBoxHtml}<h1>${judul}</h1><div>${isiHtml}</div><hr><h2>Sitasi &amp; Referensi</h2>${sitasiHtml}`;\n\nconst docTitle = `${today}_${keyword.replace(/\\s+/g, '-').toLowerCase()}`;\n\nreturn [{\n  json: {\n    ...data,\n    doc_title: docTitle,\n    doc_html: fullHtml,\n    judul_artikel: judul,\n    preview_text: isi.slice(0, 200),\n    sitasi_text: sitasi\n  }\n}];"
+      },
+      "id": "sce-0036-0000-0000-000000000036",
+      "name": "Code Build Doc Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [7940, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/drive/v3/files?uploadType=multipart",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "metadata",
+              "value": "={{ JSON.stringify({ name: $json.doc_title, mimeType: 'application/vnd.google-apps.document', parents: [$json.articles_folder_id] }) }}"
+            },
+            {
+              "parameterType": "formData",
+              "name": "media",
+              "value": "={{ $json.doc_html }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "sce-0037-0000-0000-000000000037",
+      "name": "Google Docs Create",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [8160, 500],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_GDRIVE_CREDENTIAL_ID",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const driveResponse = $json;\nconst prevData = $('Code Build Doc Content').item.json;\n\nconst docId = driveResponse.id || '';\nconst docUrl = docId ? `https://docs.google.com/document/d/${docId}/edit` : '';\n\n// Parse references for response\nconst references = [\n  { title: prevData.ref_1_title || '', url: prevData.ref_1_url || '' },\n  { title: prevData.ref_2_title || '', url: prevData.ref_2_url || '' },\n  { title: prevData.ref_3_title || '', url: prevData.ref_3_url || '' }\n].filter(r => r.url);\n\nreturn [{\n  json: {\n    status: 'success',\n    google_docs_url: docUrl,\n    doc_id: docId,\n    doc_title: prevData.doc_title,\n    metadata: {\n      slug: prevData.metadata?.slug || '',\n      meta_title: prevData.metadata?.meta_title || '',\n      meta_description: prevData.metadata?.meta_description || ''\n    },\n    preview: prevData.preview_text || '',\n    internal_links_count: prevData.internal_links_count || 0,\n    references: references,\n    word_count_actual: prevData.article_word_count || 0,\n    keyword: prevData.keyword\n  }\n}];"
+      },
+      "id": "sce-0038-0000-0000-000000000038",
+      "name": "Code Build Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [8380, 500]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "sce-0039-0000-0000-000000000039",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [8600, 500]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'error', message: $json.message || 'An error occurred', keyword: $('Webhook').item.json.keyword }) }}",
+        "options": {
+          "responseCode": 500
+        }
+      },
+      "id": "sce-0040-0000-0000-000000000040",
+      "name": "Respond Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2880, 700]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {},
+          "conditions": [
+            {
+              "id": "serp-error-check",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "sce-0041-0000-0000-000000000041",
+      "name": "IF SerpAPI Error",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2660, 700]
+    },
+    {
+      "parameters": {
+        "content": "## SEO Content Engine - Claude API\n\n### Setup Credentials (wajib sebelum run):\n1. **Google Sheets** - OAuth2: `googleSheetsOAuth2Api`\n2. **Google Drive** - OAuth2: `googleDriveOAuth2Api`\n3. **SerpAPI** - Header Auth: nama `SerpAPI`, key `apiKey`, value = API key kamu\n4. **Firecrawl** - Header Auth: nama `Firecrawl`, header `Authorization`, value = `Bearer YOUR_KEY`\n5. **Anthropic** - Header Auth: nama `Anthropic Claude API`, header `x-api-key`, value = API key kamu\n\n### Google Sheets Setup:\nSheet bernama `Clients` dengan kolom:\n`client_name | website_url | sitemap_url | drive_folder_id | articles_folder_id`\n\n### Test:\n```\nPOST /webhook/seo-content-engine\n{\n  \"client_name\": \"Nama Klien\",\n  \"keyword\": \"jasa seo jakarta\",\n  \"word_count\": 1500,\n  \"tone\": \"profesional\"\n}\n```",
+        "height": 400,
+        "width": 700,
+        "color": 3
+      },
+      "id": "sce-note-001",
+      "name": "Setup Instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [240, 200]
+    },
+    {
+      "parameters": {
+        "content": "## Phase 1: Input & Folder Setup\n\nWebhook → Read Sheets → Find Client → IF folder exists → Create folders OR skip → Merge",
+        "height": 160,
+        "width": 500,
+        "color": 7
+      },
+      "id": "sce-note-002",
+      "name": "Note Phase 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [240, 640]
+    },
+    {
+      "parameters": {
+        "content": "## Phase 2: SERP Research\n\nSerpAPI → Extract 3 URLs → Loop → Firecrawl Scrape → Aggregate → Combine\n\nFilter: no YouTube, no ads",
+        "height": 160,
+        "width": 600,
+        "color": 5
+      },
+      "id": "sce-note-003",
+      "name": "Note Phase 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2440, 640]
+    },
+    {
+      "parameters": {
+        "content": "## Phase 3: Client Site Crawl\n\nFirecrawl Crawl → Wait 90s → Get Status → Classify pages\n\nTOFU: /blog/ /artikel/ /panduan/\nBOFU: /produk/ /layanan/ /jasa/\nScoring: title+5, URL+3, meta+2",
+        "height": 200,
+        "width": 600,
+        "color": 5
+      },
+      "id": "sce-note-004",
+      "name": "Note Phase 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [4200, 640]
+    },
+    {
+      "parameters": {
+        "content": "## Phase 4 & 5: Claude API\n\nMetadata (haiku, temp 0.3) → Validate → Retry if invalid\nArticle (haiku, temp 0.7, max 8000 tokens) → Validate sections → Retry if invalid\n\nModel: claude-3-haiku-20240307\n$0.25/$1.25 per 1M tokens",
+        "height": 200,
+        "width": 600,
+        "color": 4
+      },
+      "id": "sce-note-005",
+      "name": "Note Phase 4-5",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [5300, 640]
+    },
+    {
+      "parameters": {
+        "content": "## Phase 6: Output\n\nBuild HTML → Create Google Doc → Return webhook response\n\nDoc name: YYYY-MM-DD_keyword\nSaved to: 01_Articles folder",
+        "height": 160,
+        "width": 500,
+        "color": 3
+      },
+      "id": "sce-note-006",
+      "name": "Note Phase 6",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [7940, 640]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          { "node": "GSheets Get All Clients", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GSheets Get All Clients": {
+      "main": [
+        [
+          { "node": "Code Find Client", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Code Find Client": {
+      "main": [
+        [
+          { "node": "IF No Folder", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "IF No Folder": {
+      "main": [
+        [
+          { "node": "Drive Create Root Folder", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Merge Folder Branches", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Drive Create Root Folder": {
+      "main": [
+        [
+          { "node": "Drive Create 01 Articles", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Drive Create 01 Articles": {
+      "main": [
+        [
+          { "node": "Drive Create 02 Metadata", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Drive Create 02 Metadata": {
+      "main": [
+        [
+          { "node": "Drive Create 03 Research", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Drive Create 03 Research": {
+      "main": [
+        [
+          { "node": "GSheets Update Folder ID", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GSheets Update Folder ID": {
+      "main": [
+        [
+          { "node": "Code New Folder Data", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Code New Folder Data": {
+      "main": [
+        [
+          { "node": "Merge Folder Branches", "type": "main", "index": 1 }
+        ]
+      ]
+    },
+    "Merge Folder Branches": {
+      "main": [
+        [
+          { "node": "SerpAPI Search", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "SerpAPI Search": {
+      "main": [
+        [
+          { "node": "IF SerpAPI Error", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "IF SerpAPI Error": {
+      "main": [
+        [
+          { "node": "Code Extract 3 URLs", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Respond Error", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Code Extract 3 URLs": {
+      "main": [
+        [
+          { "node": "Loop Refs", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Loop Refs": {
+      "main": [
+        [
+          { "node": "Aggregate References", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Firecrawl Scrape", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Firecrawl Scrape": {
+      "main": [
+        [
+          { "node": "Code Format Scrape", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Code Format Scrape": {
+      "main": [
+        [
+          { "node": "Loop Refs", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Aggregate References": {
+      "main": [
+        [
+          { "node": "Code Combine References", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Code Combine References": {
+      "main": [
+        [
+          { "node": "Firecrawl Start Crawl", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Firecrawl Start Crawl": {
+      "main": [
+        [
+          { "node": "Code Store Crawl ID", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Code Store Crawl ID": {
+      "main": [
+        [
+          { "node": "Wait 90s for Crawl", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Wait 90s for Crawl": {
+      "main": [
+        [
+          { "node": "Get Crawl Status", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Get Crawl Status": {
+      "main": [
+        [
+          { "node": "Code Classify Pages", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Code Classify Pages": {
+      "main": [
+        [
+          { "node": "Claude Generate Metadata", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Claude Generate Metadata": {
+      "main": [
+        [
+          { "node": "Code Parse Metadata", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Code Parse Metadata": {
+      "main": [
+        [
+          { "node": "IF Metadata Valid", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "IF Metadata Valid": {
+      "main": [
+        [
+          { "node": "Merge Metadata", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Claude Metadata Retry", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Claude Metadata Retry": {
+      "main": [
+        [
+          { "node": "Code Parse Metadata Retry", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Code Parse Metadata Retry": {
+      "main": [
+        [
+          { "node": "Merge Metadata", "type": "main", "index": 1 }
+        ]
+      ]
+    },
+    "Merge Metadata": {
+      "main": [
+        [
+          { "node": "Claude Generate Article", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Claude Generate Article": {
+      "main": [
+        [
+          { "node": "Code Validate Article", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Code Validate Article": {
+      "main": [
+        [
+          { "node": "IF Article Valid", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "IF Article Valid": {
+      "main": [
+        [
+          { "node": "Merge Article", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Claude Article Retry", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Claude Article Retry": {
+      "main": [
+        [
+          { "node": "Code Validate Retry", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Code Validate Retry": {
+      "main": [
+        [
+          { "node": "Merge Article", "type": "main", "index": 1 }
+        ]
+      ]
+    },
+    "Merge Article": {
+      "main": [
+        [
+          { "node": "Code Build Doc Content", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Code Build Doc Content": {
+      "main": [
+        [
+          { "node": "Google Docs Create", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Google Docs Create": {
+      "main": [
+        [
+          { "node": "Code Build Response", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Code Build Response": {
+      "main": [
+        [
+          { "node": "Respond to Webhook", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "versionId": "sce-v1-20260430",
+  "meta": {
+    "templateId": "seo-content-engine-claude",
+    "instanceId": "seo-content-engine-001"
+  },
+  "id": "SEOContentEngineClaude",
+  "tags": [
+    { "name": "SEO", "createdAt": "2026-04-30" },
+    { "name": "Content", "createdAt": "2026-04-30" },
+    { "name": "Claude", "createdAt": "2026-04-30" }
+  ]
+}

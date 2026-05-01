@@ -1,0 +1,23 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile.n8n"
+
+[deploy]
+startCommand = "n8n start"
+healthcheckPath = "/healthz"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 5
+
+# Catatan:
+# - Tambahkan persistent volume di Railway dashboard:
+#   Mount path: /home/node/.n8n
+#   Ini agar credentials, workflow, dan database SQLite tidak hilang saat redeploy.
+#
+# - Set environment variables di Railway dashboard:
+#   WEBHOOK_URL=https://<RAILWAY_URL>
+#   N8N_EDITOR_BASE_URL=https://<RAILWAY_URL>
+#   N8N_BASIC_AUTH_ACTIVE=true
+#   N8N_BASIC_AUTH_USER=<pilih username>
+#   N8N_BASIC_AUTH_PASSWORD=<pilih password kuat>
+#   N8N_ENCRYPTION_KEY=<random 32-char string, JANGAN diganti setelah set>
